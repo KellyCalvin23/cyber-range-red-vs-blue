@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Cyber Range: Red vs Blue</title>
+  <meta name="description" content="A turn-based cyber security simulation for beginners. Play the red team attacking a school network, or the blue team defending it." />
+  <meta name="theme-color" content="#0a0e16" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+
+<!-- ==========================================================
+     START SCREEN
+     ========================================================== -->
+<div class="screen is-active" id="screen-start">
+  <div class="start-wrap">
+    <div class="logo-row"><span class="logo-dot"></span> Cyber Range &middot; Training Simulator</div>
+
+    <h1 class="hero-title">
+      <span class="t-red">RED</span><span class="vs">vs</span><span class="t-blue">BLUE</span>
+    </h1>
+    <p class="hero-sub">
+      A real cyber attack is not one click &mdash; it is a chain of steps, and defenders get a
+      chance to break that chain at every link. Pick a side, take turns, and find out how
+      breaches actually happen.
+    </p>
+
+    <div class="scenario-card">
+      <div class="kicker">Scenario 01 &middot; Operation Glass Hallway</div>
+      <h3>Riverbend Academy &mdash; 900 students, one very valuable database</h3>
+      <p id="scenario-blurb">
+        The school keeps names, home addresses, grades and medical notes on a single database
+        server. One side wants to copy it out. The other side has to stop them &mdash; without
+        shutting the school down in the process.
+      </p>
+    </div>
+
+    <div class="section-label">Step 1 &mdash; Choose your side</div>
+    <div class="roles">
+      <button class="role-card" data-role="red" aria-pressed="false">
+        <div class="role-icon">🎯</div>
+        <div class="role-tag">Offensive Security</div>
+        <h3 class="t-red">Red Team</h3>
+        <p>You are an authorised attacker, hired to break in on purpose so the school can
+           fix what you find.</p>
+        <ul>
+          <li>Research the target, then pick a way in</li>
+          <li>Climb from normal user to administrator</li>
+          <li>Move machine to machine towards the data</li>
+          <li>Stay quiet &mdash; every noisy move can be detected</li>
+        </ul>
+      </button>
+
+      <button class="role-card" data-role="blue" aria-pressed="false">
+        <div class="role-icon">🛡️</div>
+        <div class="role-tag">Defensive Security</div>
+        <h3 class="t-blue">Blue Team</h3>
+        <p>You run the Security Operations Centre. Alarms are going off and most of them are
+           nothing.</p>
+        <ul>
+          <li>Triage alerts &mdash; real threat or false alarm?</li>
+          <li>Contain, rebuild and close the way in</li>
+          <li>Build defences before you need them</li>
+          <li>Keep the school running while you do it</li>
+        </ul>
+      </button>
+    </div>
+
+    <div class="section-label">Step 2 &mdash; Choose a difficulty</div>
+    <div class="pills" id="difficulty-pills"></div>
+    <p class="pill-note" id="difficulty-note"></p>
+
+    <div class="start-actions">
+      <button class="btn btn-primary btn-lg" id="btn-start" disabled>Start the simulation</button>
+      <button class="btn btn-ghost" id="btn-howto">How to play</button>
+      <button class="btn btn-ghost" id="btn-gloss-start">Glossary</button>
+    </div>
+
+    <p class="pill-note" style="margin-top:26px;max-width:70ch">
+      Everything in this simulator is fictional &mdash; the school, the staff, the CVE numbers
+      and the software. It teaches you how attacks are <em>structured</em> so you can defend
+      against them. It contains no real exploit code, and nothing here works on a real computer.
+    </p>
+  </div>
+</div>
+
+<!-- ==========================================================
+     GAME SCREEN
+     ========================================================== -->
+<div class="screen" id="screen-game">
+  <header class="hud">
+    <div class="hud-brand">Cyber Range</div>
+    <div class="hud-turn" id="hud-turn">Turn 1 / 12</div>
+    <div class="hud-phase is-red" id="hud-phase">RED PHASE</div>
+
+    <div class="meters">
+      <div class="meter">
+        <div class="meter-top"><span>Data Safety</span><span id="m-data-v">100</span></div>
+        <div class="meter-bar"><div class="meter-fill safe" id="m-data" style="width:100%"></div></div>
+      </div>
+      <div class="meter">
+        <div class="meter-top"><span>School Uptime</span><span id="m-up-v">100</span></div>
+        <div class="meter-bar"><div class="meter-fill safe" id="m-up" style="width:100%"></div></div>
+      </div>
+    </div>
+
+    <div class="hud-actions">
+      <button class="icon-btn" id="btn-gloss" title="Glossary" aria-label="Glossary">📖</button>
+      <button class="icon-btn" id="btn-help" title="How to play" aria-label="How to play">?</button>
+      <button class="icon-btn btn-danger" id="btn-quit" title="Abandon and restart" aria-label="Abandon and restart">⏏</button>
+      <button class="btn" id="btn-end">End turn</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <div class="col-left">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Network Map &mdash; Riverbend Academy</h2>
+          <span class="hint" id="map-hint">Click any machine to inspect it</span>
+        </div>
+        <div class="map" id="map">
+          <svg class="map-svg" id="map-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+        </div>
+        <div class="map-legend">
+          <span><i class="swatch" style="background:var(--panel-2)"></i> Clean</span>
+          <span><i class="swatch" style="background:rgba(255,80,104,.35);border-color:var(--red)"></i> Attacker has access</span>
+          <span><i class="swatch" style="border:2px dashed var(--amber);background:transparent"></i> Blue has confirmed a threat</span>
+          <span><i class="swatch" style="border-style:dashed;opacity:.5"></i> Isolated</span>
+          <span>EDR = endpoint watchdog &middot; SEG = segmented &middot; P1/P2 = patch level</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Live Feed</h2>
+          <span class="hint">Everything both sides do, as it happens</span>
+        </div>
+        <div class="log" id="log" aria-live="polite" aria-atomic="false"></div>
+      </section>
+    </div>
+
+    <div class="col-right">
+      <div class="turn-banner" id="turn-banner">
+        <div>
+          <div class="who" id="banner-who">Your move</div>
+          <div class="sub" id="banner-sub">Pick an action.</div>
+        </div>
+        <div class="ap-row">
+          <span class="ap-label">Action points</span>
+          <span class="ap-pips" id="ap-pips"></span>
+        </div>
+      </div>
+
+      <section class="panel" id="panel-queue">
+        <div class="panel-head">
+          <h2 id="queue-title">Alert Queue</h2>
+          <span class="hint" id="queue-hint"></span>
+        </div>
+        <div class="panel-body" id="queue-body"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2 id="actions-title">Playbook</h2>
+          <span class="hint">ⓘ explains the real technique</span>
+        </div>
+        <div class="panel-body" id="actions-body"></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- ==========================================================
+     DEBRIEF SCREEN
+     ========================================================== -->
+<div class="screen" id="screen-debrief">
+  <div class="debrief-wrap" id="debrief-body"></div>
+</div>
+
+<!-- ==========================================================
+     NODE INSPECTOR
+     ========================================================== -->
+<aside class="drawer" id="inspector" aria-hidden="true" role="dialog" aria-label="Machine details">
+  <div class="drawer-head">
+    <div class="big" id="insp-icon">🖥️</div>
+    <div>
+      <h3 id="insp-name">Machine</h3>
+      <div class="sub" id="insp-kind">SERVER</div>
+    </div>
+    <button class="drawer-close" id="insp-close" aria-label="Close">&times;</button>
+  </div>
+  <div class="drawer-body" id="insp-body"></div>
+</aside>
+
+<!-- modal mount point -->
+<div id="modal-mount"></div>
+<!-- coach mount point -->
+<div id="coach-mount"></div>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/engine.js"></script>
+<script src="assets/js/ai.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>
