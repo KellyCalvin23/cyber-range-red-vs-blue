@@ -10,3 +10,6 @@
 # logs / scratch
 *.log
 node_modules/
+
+# separate repo (KellyCalvin23/cyber-beginner)
+Beginner/
